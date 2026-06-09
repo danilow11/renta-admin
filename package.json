@@ -1,0 +1,16 @@
+{
+  "name": "renta-admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:web": "pnpm --filter @renta-admin/web dev",
+    "dev:api": "pnpm --filter @renta-admin/api start:dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "packageManager": "pnpm@11.5.2"
+}

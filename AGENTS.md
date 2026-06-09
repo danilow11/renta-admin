@@ -52,6 +52,9 @@ Avoid inspecting or editing generated/dependency folders unless explicitly asked
 - `dist/`
 - `build/`
 - `coverage/`
+- `apps/web/.next/`
+- `apps/web/next-env.d.ts`
+- `apps/api/dist/`
 - `.kilo/node_modules/`
 
 Expected task flow:

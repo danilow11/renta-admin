@@ -25,6 +25,9 @@ Avoid:
 - `dist/`
 - `build/`
 - `coverage/`
+- `apps/web/.next/`
+- `apps/web/next-env.d.ts`
+- `apps/api/dist/`
 - `.kilo/node_modules/`
 - lockfile rewrites unless package dependencies changed
 

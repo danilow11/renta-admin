@@ -1,9 +1,15 @@
 node_modules/
+.pnp
+.pnp.*
+.yarn/
 .next/
 dist/
 build/
 coverage/
 out/
+*.tsbuildinfo
+apps/web/next-env.d.ts
+.vercel/
 
 .kilo/node_modules/
 .kilo/package.json
