@@ -24,6 +24,10 @@ Priorities:
 - Only read files relevant to the current task.
 - Only edit files listed in the task, unless asking first.
 - Keep summaries focused on the requested task.
+- After edits, report changed files, commands run, and known issues.
+- Prefer concise relevant diffs or changed-file summaries over broad repo summaries.
+- Use pnpm workspace commands from the repo root.
+- Do not suggest `npx` for project commands.
 
 Avoid:
 
@@ -54,4 +58,14 @@ Workflow:
 2. Mention the files likely to change.
 3. Implement the smallest useful version.
 4. Run the relevant checks if available.
-5. Summarize what changed and what Daniel should understand for interviews.
+5. Summarize changed files, commands run, known issues, and what Daniel should understand for interviews.
+
+Preferred command examples:
+
+- `pnpm --filter @renta-admin/api test:e2e`
+- `pnpm --filter @renta-admin/api start:dev`
+- `pnpm --filter @renta-admin/web dev`
+- `pnpm db:validate`
+- `pnpm lint`
+- `pnpm test`
+- `pnpm build`

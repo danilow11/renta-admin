@@ -9,11 +9,16 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
+    "check": "pnpm lint && pnpm test && pnpm build && pnpm --filter @renta-admin/api test:e2e && pnpm db:validate",
+    "check:quick": "pnpm lint && pnpm test && pnpm db:validate",
     "db:validate": "pnpm --filter @renta-admin/api exec prisma validate",
     "db:migrate": "pnpm --filter @renta-admin/api exec prisma migrate dev",
     "db:studio": "pnpm --filter @renta-admin/api exec prisma studio",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
-  "packageManager": "pnpm@11.5.2"
+  "packageManager": "pnpm@11.5.2",
+  "devDependencies": {
+    "prettier": "^3.8.3"
+  }
 }

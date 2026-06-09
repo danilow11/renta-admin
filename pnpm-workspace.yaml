@@ -1,5 +1,5 @@
 packages:
-  - "apps/*"
+  - 'apps/*'
 allowBuilds:
   '@prisma/engines': true
   prisma: true
