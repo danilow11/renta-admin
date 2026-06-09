@@ -1,0 +1,14 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+out/
+
+.kilo/node_modules/
+.kilo/package.json
+.kilo/package-lock.json
+.kilo/pnpm-lock.yaml
+.kilo/yarn.lock
+.kilo/bun.lock
+.kilo/agent-manager.json
