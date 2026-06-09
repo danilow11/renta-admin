@@ -44,6 +44,8 @@ Thumbs.db
 # Prisma
 *.db
 *.db-journal
+generated/
+apps/api/generated/
 
 # Kilo local runtime files
 .kilo/node_modules/

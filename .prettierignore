@@ -10,6 +10,8 @@ out/
 *.tsbuildinfo
 apps/web/next-env.d.ts
 .vercel/
+generated/
+apps/api/generated/
 
 .kilo/node_modules/
 .kilo/package.json
