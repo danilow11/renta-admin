@@ -17,6 +17,13 @@ Priorities:
 - Use English for code, database names, API routes, comments, branches, and commit messages.
 - Prefer clear names and simple code over clever abstractions.
 - Do not inspect or edit generated/dependency folders unless explicitly asked.
+- Do not run git commands unless explicitly asked.
+- Do not inspect git history unless explicitly asked.
+- Do not perform broad reviews during implementation tasks unless explicitly asked.
+- Do not run suggested follow-up actions unless Daniel explicitly asks to run them.
+- Only read files relevant to the current task.
+- Only edit files listed in the task, unless asking first.
+- Keep summaries focused on the requested task.
 
 Avoid:
 
@@ -30,6 +37,16 @@ Avoid:
 - `apps/api/dist/`
 - `.kilo/node_modules/`
 - lockfile rewrites unless package dependencies changed
+
+Do not run broad/general agent reviews unless explicitly requested, including:
+
+- Security review
+- Performance review
+- Business logic review
+- Full working tree review
+- Uncommitted changes review
+- Architecture review
+- Dependency review
 
 Workflow:
 

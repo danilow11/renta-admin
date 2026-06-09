@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -12,7 +7,279 @@ datasource db {
   provider = "postgresql"
 }
 
-model HealthCheck {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+enum WorkspaceRole {
+  OWNER
+  MANAGER
+}
+
+enum UnitStatus {
+  AVAILABLE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum ContractStatus {
+  ACTIVE
+  ENDED
+  CANCELLED
+  PENDING
+}
+
+enum RentChargeStatus {
+  PENDING
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  BANK_DEPOSIT
+  APPLIED_DEPOSIT
+  OTHER
+}
+
+enum DepositStatus {
+  PENDING
+  PAID
+  APPLIED
+  RETURNED
+  RETAINED
+}
+
+enum ExpenseCategory {
+  ELECTRICITY
+  WATER
+  INTERNET
+  MAINTENANCE
+  REPAIR
+  CLEANING
+  TAXES
+  OTHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships WorkspaceMember[]
+}
+
+model Workspace {
+  id         String    @id @default(cuid())
+  name       String
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  members     WorkspaceMember[]
+  properties  Property[]
+  units       Unit[]
+  tenants     Tenant[]
+  contracts   Contract[]
+  rentCharges RentCharge[]
+  payments    Payment[]
+  expenses    Expense[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  role        WorkspaceRole
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  userId      String
+  workspaceId String
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Property {
+  id         String    @id @default(cuid())
+  name       String
+  street     String?
+  city       String?
+  state      String?
+  notes      String?
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  workspaceId String
+  createdById String?
+  updatedById String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  units    Unit[]
+  expenses Expense[]
+
+  @@index([workspaceId])
+}
+
+model Unit {
+  id               String     @id @default(cuid())
+  name             String
+  defaultRentCents Int?
+  status           UnitStatus @default(AVAILABLE)
+  notes            String?
+  archivedAt       DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  propertyId  String
+  workspaceId String
+  createdById String?
+  updatedById String?
+
+  property  Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  contracts Contract[]
+  expenses  Expense[]
+
+  @@index([propertyId])
+  @@index([workspaceId])
+}
+
+model Tenant {
+  id               String    @id @default(cuid())
+  name             String
+  phone            String
+  email            String?
+  city             String?
+  state            String?
+  emergencyContact String?
+  notes            String?
+  archivedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  workspaceId String
+  createdById String?
+  updatedById String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  contracts Contract[]
+
+  @@index([workspaceId])
+}
+
+model Contract {
+  id                 String         @id @default(cuid())
+  startDate          DateTime
+  endDate            DateTime?
+  monthlyRentCents   Int
+  paymentDay         Int
+  depositAmountCents Int?
+  depositStatus      DepositStatus?
+  depositNotes       String?
+  includedServices   String?
+  tenantPaidServices String?
+  notes              String?
+  status             ContractStatus @default(ACTIVE)
+  archivedAt         DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  tenantId    String
+  unitId      String
+  workspaceId String
+  createdById String?
+  updatedById String?
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  unit      Unit      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  rentCharges RentCharge[]
+
+  @@index([tenantId])
+  @@index([unitId])
+  @@index([workspaceId])
+}
+
+model RentCharge {
+  id          String           @id @default(cuid())
+  dueDate     DateTime
+  month       DateTime
+  amountCents Int
+  status      RentChargeStatus @default(PENDING)
+  archivedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  contractId  String
+  workspaceId String
+  createdById String?
+  updatedById String?
+
+  contract  Contract  @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  payments Payment[]
+
+  @@unique([contractId, month])
+  @@index([workspaceId])
+  @@index([dueDate])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  amountCents Int
+  paymentDate DateTime
+  method      PaymentMethod
+  notes       String?
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  rentChargeId String
+  workspaceId  String
+  createdById  String?
+  updatedById  String?
+
+  rentCharge RentCharge @relation(fields: [rentChargeId], references: [id], onDelete: Restrict)
+  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@index([rentChargeId])
+  @@index([workspaceId])
+  @@index([paymentDate])
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  amountCents Int
+  category    ExpenseCategory
+  date        DateTime
+  description String?
+  notes       String?
+  archivedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  propertyId  String
+  unitId      String?
+  workspaceId String
+  createdById String?
+  updatedById String?
+
+  property  Property  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  unit      Unit?     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([workspaceId])
+  @@index([date])
 }
