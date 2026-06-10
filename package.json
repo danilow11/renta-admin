@@ -13,6 +13,7 @@
     "check:quick": "pnpm lint && pnpm test && pnpm db:validate",
     "db:validate": "pnpm --filter @renta-admin/api exec prisma validate",
     "db:migrate": "pnpm --filter @renta-admin/api exec prisma migrate dev",
+    "db:seed": "pnpm --filter @renta-admin/api exec prisma db seed",
     "db:studio": "pnpm --filter @renta-admin/api exec prisma studio",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
