@@ -383,6 +383,24 @@ Notes:
 - File upload
 - Testing
 
+## Architecture And Patterns To Learn Organically
+
+Patterns should be introduced when they solve a real problem in the app, not as abstract exercises.
+
+Examples:
+
+- Controller-service separation in NestJS.
+- Dependency injection for services like Prisma.
+- DTOs for request/response shape.
+- Repository-style extraction only if Prisma queries become duplicated or hard to read.
+- Guard pattern for auth and role checks.
+- Adapter pattern for external services like file storage.
+- Derived state for payment status and dashboard totals.
+- Reusable form/table patterns in the frontend.
+- Error boundary and loading/error/empty state patterns in the frontend.
+
+Avoid adding architecture layers just to look professional. The goal is to understand and explain why a pattern was useful in this project.
+
 ## AI Workflow
 
 Default workflow:
