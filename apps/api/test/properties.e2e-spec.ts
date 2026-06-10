@@ -57,6 +57,36 @@ describe('PropertiesController (e2e)', () => {
       });
   });
 
+  it('GET /properties/:id returns the property matching a real list ID', async () => {
+    const server = app.getHttpServer();
+
+    const listRes = await request(server).get('/properties').expect(200);
+    const list = listRes.body as PropertyResponse[];
+    const virreyes = list.find((p) => p.name === 'Casa Virreyes');
+    expect(virreyes).toBeDefined();
+
+    return request(server)
+      .get(`/properties/${virreyes!.id}`)
+      .expect(200)
+      .expect((res) => {
+        const property = res.body as PropertyResponse;
+        expect(property.name).toBe('Casa Virreyes');
+        expect(property.workspaceId).toBe(virreyes!.workspaceId);
+        expect(Array.isArray(property.units)).toBe(true);
+        expect(property.units.length).toBeGreaterThanOrEqual(1);
+      });
+  });
+
+  it('GET /properties/:id returns 404 for a non-existent id', () => {
+    return request(app.getHttpServer())
+      .get('/properties/nonexistent-id-12345')
+      .expect(404)
+      .expect((res) => {
+        expect(res.body).toHaveProperty('statusCode', 404);
+        expect(res.body).toHaveProperty('message');
+      });
+  });
+
   afterEach(async () => {
     await app.close();
   });

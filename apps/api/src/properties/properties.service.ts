@@ -28,4 +28,32 @@ export class PropertiesService {
       orderBy: { createdAt: 'asc' },
     });
   }
+
+  async findOne(id: string) {
+    const workspace = await this.prisma.workspace.findFirst({
+      where: { name: 'Propiedades Morelia' },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException('Workspace "Propiedades Morelia" not found');
+    }
+
+    const singleProperty = await this.prisma.property.findFirst({
+      where: {
+        workspaceId: workspace.id,
+        id,
+        archivedAt: null,
+      },
+      include: {
+        units: {
+          where: { archivedAt: null },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!singleProperty) throw new NotFoundException('Property not found');
+
+    return singleProperty;
+  }
 }
