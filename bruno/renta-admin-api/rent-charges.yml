@@ -1,0 +1,11 @@
+info:
+  name: Get Rent Charges
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/rent-charges"
+
+settings:
+  encodeUrl: true

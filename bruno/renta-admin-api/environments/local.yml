@@ -1,0 +1,7 @@
+info:
+  name: local
+  type: environment
+
+vars:
+  baseUrl: http://localhost:3000
+  propertyId: replace-with-property-id
