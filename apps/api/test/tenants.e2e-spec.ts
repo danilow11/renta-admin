@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -14,6 +15,8 @@ interface TenantResponse {
 
 describe('TenantsController (e2e)', () => {
   let app: INestApplication<App>;
+  let jwtService: JwtService;
+  let validToken: string;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -21,12 +24,28 @@ describe('TenantsController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
+
+    jwtService = app.get(JwtService);
+    validToken = jwtService.sign({ sub: 'test-user-id', email: 'daniel@example.com' });
   });
 
-  it('GET /tenants returns seeded tenants', () => {
+  it('GET /tenants without token returns 401', () => {
+    return request(app.getHttpServer()).get('/tenants').expect(401);
+  });
+
+  it('GET /tenants with invalid token returns 401', () => {
     return request(app.getHttpServer())
       .get('/tenants')
+      .set('Authorization', 'Bearer invalid-token')
+      .expect(401);
+  });
+
+  it('GET /tenants with valid token returns seeded tenants', () => {
+    return request(app.getHttpServer())
+      .get('/tenants')
+      .set('Authorization', `Bearer ${validToken}`)
       .expect(200)
       .expect((res) => {
         const body = res.body as TenantResponse[];
