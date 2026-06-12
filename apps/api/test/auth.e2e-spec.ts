@@ -15,8 +15,29 @@ interface LoginResponse {
   user: LoginUserResponse;
 }
 
+interface MeWorkspace {
+  id: string;
+  name: string;
+}
+
+interface MeMembership {
+  id: string;
+  role: string;
+  workspaceId: string;
+  userId: string;
+  workspace: MeWorkspace;
+}
+
+interface MeResponse {
+  user: LoginUserResponse;
+  memberships: MeMembership[];
+}
+
 describe('AuthController (e2e)', () => {
   let app: INestApplication<App>;
+  let validToken: string;
+
+  jest.setTimeout(15000);
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -26,6 +47,12 @@ describe('AuthController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
+
+    const server = app.getHttpServer();
+    const res = await request(server)
+      .post('/auth/login')
+      .send({ email: 'daniel@example.com', password: 'password123' });
+    validToken = (res.body as LoginResponse).accessToken;
   });
 
   it('POST /auth/login succeeds with seeded credentials', () => {
@@ -94,6 +121,27 @@ describe('AuthController (e2e)', () => {
         password: '',
       })
       .expect(400);
+  });
+
+  it('GET /auth/me without token returns 401', () => {
+    return request(app.getHttpServer()).get('/auth/me').expect(401);
+  });
+
+  it('GET /auth/me with valid token returns current user and workspace', () => {
+    return request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200)
+      .expect((res) => {
+        const body = res.body as MeResponse;
+        expect(body.user).toBeDefined();
+        expect(body.user.email).toBe('daniel@example.com');
+        expect(body.user.name).toBe('Daniel Alvarez');
+        expect(typeof body.user.id).toBe('string');
+        expect(Array.isArray(body.memberships)).toBe(true);
+        expect(body.memberships.length).toBeGreaterThanOrEqual(1);
+        expect(body.memberships[0].workspace.name).toBe('Propiedades Morelia');
+      });
   });
 
   afterEach(async () => {
