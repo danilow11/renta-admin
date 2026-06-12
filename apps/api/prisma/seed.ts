@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { loadEnvFile } from 'node:process';
+import argon2 from 'argon2';
 
 loadEnvFile('../../.env');
 
@@ -13,7 +14,8 @@ if (!databaseUrl) {
 const adapter = new PrismaPg({ connectionString: databaseUrl });
 const prisma = new PrismaClient({ adapter });
 
-const seedUserEmail = 'daniel.alvarez@example.com';
+const seedUserEmail = 'daniel@example.com';
+const seedUserPassword = 'password123';
 const seedWorkspaceName = 'Propiedades Morelia';
 
 async function clearSeedData() {
@@ -56,10 +58,12 @@ async function clearSeedData() {
 async function main() {
   await clearSeedData();
 
+  const passwordHash = await argon2.hash(seedUserPassword);
+
   const user = await prisma.user.create({
     data: {
       email: seedUserEmail,
-      passwordHash: '$2b$10$EpRnT5GvIzU4GcZn4/GyPupHmYkp1FB5XbhFx1JGvBqG0KXbFmvG6',
+      passwordHash,
       name: 'Daniel Alvarez',
     },
   });

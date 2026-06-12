@@ -1,0 +1,77 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from './../src/app.module';
+
+interface LoginUserResponse {
+  id: string;
+  email: string;
+  name: string;
+}
+
+interface LoginResponse {
+  accessToken: string;
+  user: LoginUserResponse;
+}
+
+describe('AuthController (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeEach(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  it('POST /auth/login succeeds with seeded credentials', () => {
+    return request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'daniel@example.com',
+        password: 'password123',
+      })
+      .expect(200)
+      .expect((res) => {
+        const body = res.body as LoginResponse;
+        expect(typeof body.accessToken).toBe('string');
+        expect(body.accessToken.length).toBeGreaterThan(0);
+        expect(body.user).toBeDefined();
+        expect(typeof body.user.id).toBe('string');
+        expect(body.user.email).toBe('daniel@example.com');
+        expect(body.user.name).toBe('Daniel Alvarez');
+      });
+  });
+
+  it('POST /auth/login response does not include passwordHash', () => {
+    return request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'daniel@example.com',
+        password: 'password123',
+      })
+      .expect(200)
+      .expect((res) => {
+        const body = res.body as LoginResponse & { passwordHash?: unknown };
+        expect(body.passwordHash).toBeUndefined();
+        expect((body.user as unknown as Record<string, unknown>).passwordHash).toBeUndefined();
+      });
+  });
+
+  it('POST /auth/login fails with wrong password and returns 401', () => {
+    return request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'daniel@example.com',
+        password: 'wrong-password',
+      })
+      .expect(401);
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+});

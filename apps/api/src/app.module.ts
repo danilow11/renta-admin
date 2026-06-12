@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PropertiesModule } from './properties/properties.module';
-import { TenantsModule } from './tenants/tenants.module';
 import { RentChargesModule } from './rent-charges/rent-charges.module';
+import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { RentChargesModule } from './rent-charges/rent-charges.module';
       isGlobal: true,
     }),
     PrismaModule,
+    AuthModule,
     PropertiesModule,
     TenantsModule,
     RentChargesModule,
