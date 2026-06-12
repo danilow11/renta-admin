@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -24,6 +24,7 @@ describe('AuthController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
   });
 
@@ -69,6 +70,30 @@ describe('AuthController (e2e)', () => {
         password: 'wrong-password',
       })
       .expect(401);
+  });
+
+  it('POST /auth/login missing body returns 400', () => {
+    return request(app.getHttpServer()).post('/auth/login').expect(400);
+  });
+
+  it('POST /auth/login invalid email returns 400', () => {
+    return request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'not-an-email',
+        password: 'password123',
+      })
+      .expect(400);
+  });
+
+  it('POST /auth/login empty password returns 400', () => {
+    return request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'daniel@example.com',
+        password: '',
+      })
+      .expect(400);
   });
 
   afterEach(async () => {
