@@ -1,22 +1,35 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
+
+interface AuthenticatedUserPayload {
+  sub: string;
+  email: string;
+}
 
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workspacesService: WorkspacesService,
+  ) {}
 
-  async findAll() {
-    const workspace = await this.prisma.workspace.findFirst({
-      where: { name: 'Propiedades Morelia' },
-    });
-
-    if (!workspace) {
-      throw new NotFoundException('Workspace "Propiedades Morelia" not found');
+  private async getWorkspaceId(user?: AuthenticatedUserPayload) {
+    if (!user?.sub) {
+      throw new UnauthorizedException('Invalid authenticated user');
     }
+
+    const membership = await this.workspacesService.getDefaultWorkspaceForUser(user.sub);
+
+    return membership.workspaceId;
+  }
+
+  async findAll(user?: AuthenticatedUserPayload) {
+    const workspaceId = await this.getWorkspaceId(user);
 
     return this.prisma.property.findMany({
       where: {
-        workspaceId: workspace.id,
+        workspaceId,
         archivedAt: null,
       },
       include: {
@@ -29,18 +42,12 @@ export class PropertiesService {
     });
   }
 
-  async findOne(id: string) {
-    const workspace = await this.prisma.workspace.findFirst({
-      where: { name: 'Propiedades Morelia' },
-    });
-
-    if (!workspace) {
-      throw new NotFoundException('Workspace "Propiedades Morelia" not found');
-    }
+  async findOne(id: string, user?: AuthenticatedUserPayload) {
+    const workspaceId = await this.getWorkspaceId(user);
 
     const singleProperty = await this.prisma.property.findFirst({
       where: {
-        workspaceId: workspace.id,
+        workspaceId,
         id,
         archivedAt: null,
       },

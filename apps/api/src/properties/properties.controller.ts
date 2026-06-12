@@ -1,4 +1,5 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Request, UseGuards } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { JwtGuard } from '../auth/jwt.guard';
 import { PropertiesService } from './properties.service';
 
@@ -8,12 +9,12 @@ export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
 
   @Get()
-  findAll() {
-    return this.propertiesService.findAll();
+  findAll(@Request() request: ExpressRequest) {
+    return this.propertiesService.findAll(request.user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.propertiesService.findOne(id);
+  findOne(@Param('id') id: string, @Request() request: ExpressRequest) {
+    return this.propertiesService.findOne(id, request.user);
   }
 }
