@@ -105,6 +105,198 @@ decorators + modules + dependency injection
 
 You describe the app structure with decorators and modules. Nest uses that metadata to create classes, connect dependencies, and register routes.
 
+## Module Metadata Mental Model
+
+Every NestJS module can have four common keys:
+
+| Key | Plain meaning | Question it answers |
+| --- | --- | --- |
+| `imports` | Other modules this module depends on. | What do I need from outside? |
+| `controllers` | HTTP route classes owned by this module. | What routes belong here? |
+| `providers` | Injectable classes created by this module. | What services/guards can this module create? |
+| `exports` | Providers/modules this module shares with other modules. | What am I making available outside? |
+
+The most important one to understand is `providers`.
+
+`providers` means:
+
+```text
+These are the classes Nest is allowed to create and inject into constructors.
+```
+
+Example:
+
+```ts
+@Module({
+  controllers: [AuthController],
+  providers: [AuthService],
+})
+export class AuthModule {}
+```
+
+Because `AuthService` is listed in `providers`, this works:
+
+```ts
+constructor(private readonly authService: AuthService) {}
+```
+
+If `AuthService` were not listed in `providers`, Nest could compile the TypeScript code but fail at runtime because it would not know how to create `AuthService`.
+
+Providers are usually:
+
+- Services
+- Guards
+- Strategies
+- Repository/helper classes
+- Any class Nest should create and inject
+
+For now, the simplest mental model is:
+
+```text
+providers = injectable classes available inside this module
+exports = providers/modules other modules are allowed to use
+```
+
+The confusing part is that TypeScript imports and Nest module imports are different.
+
+```ts
+import { UsersService } from '../users/users.service';
+```
+
+This means:
+
+```text
+TypeScript can reference the UsersService class.
+```
+
+But this:
+
+```ts
+@Module({
+  imports: [UsersModule],
+})
+```
+
+means:
+
+```text
+Nest can inject providers exported by UsersModule.
+```
+
+In short:
+
+```text
+TypeScript import = code can mention it
+Nest module import = dependency injection can use it
+```
+
+## Current Module Wiring
+
+```mermaid
+flowchart TD
+  AppModule["AppModule"]
+  ConfigModule["ConfigModule<br/>loads .env"]
+  PrismaModule["PrismaModule<br/>exports PrismaService globally"]
+  AuthModule["AuthModule"]
+  UsersModule["UsersModule"]
+  PropertiesModule["PropertiesModule"]
+  TenantsModule["TenantsModule"]
+  RentChargesModule["RentChargesModule"]
+
+  AppModule --> ConfigModule
+  AppModule --> PrismaModule
+  AppModule --> AuthModule
+  AppModule --> PropertiesModule
+  AppModule --> TenantsModule
+  AppModule --> RentChargesModule
+
+  AuthModule --> UsersModule
+  PropertiesModule --> AuthModule
+```
+
+What this means:
+
+- `AppModule` is the root table of contents.
+- `AuthModule` needs `UsersModule` because `AuthService` injects `UsersService`.
+- `PropertiesModule` needs `AuthModule` because `PropertiesController` uses `JwtGuard`.
+- `PrismaModule` is global, so services can inject `PrismaService` without importing `PrismaModule` in every feature module.
+
+## Module Examples From This App
+
+### UsersModule
+
+```ts
+@Module({
+  providers: [UsersService],
+  exports: [UsersService],
+})
+export class UsersModule {}
+```
+
+Meaning:
+
+- This module creates `UsersService`.
+- Other modules can use `UsersService` because it is exported.
+- There is no controller because users are internal to auth for now.
+
+### AuthModule
+
+```ts
+@Module({
+  imports: [UsersModule, JwtModule.registerAsync(...)],
+  controllers: [AuthController],
+  providers: [AuthService, JwtGuard],
+  exports: [JwtGuard, JwtModule],
+})
+export class AuthModule {}
+```
+
+Meaning:
+
+- It imports `UsersModule` so `AuthService` can inject `UsersService`.
+- It configures `JwtModule` so `AuthService` and `JwtGuard` can use `JwtService`.
+- It owns `AuthController`, which exposes `POST /auth/login`.
+- It creates `AuthService` and `JwtGuard`.
+- It exports `JwtGuard` so other modules can protect routes.
+- It exports `JwtModule` so tests or other modules can access the configured `JwtService` when needed.
+
+### PropertiesModule
+
+```ts
+@Module({
+  imports: [AuthModule],
+  controllers: [PropertiesController],
+  providers: [PropertiesService],
+})
+export class PropertiesModule {}
+```
+
+Meaning:
+
+- It imports `AuthModule` because `PropertiesController` uses `JwtGuard`.
+- It owns `PropertiesController`.
+- It creates `PropertiesService`.
+- It does not export anything yet because no other module needs `PropertiesService`.
+
+## How To Read A Module
+
+When a module feels confusing, read it in this order:
+
+1. `controllers`: What HTTP routes does this feature expose?
+2. `providers`: What injectable classes does this feature create?
+3. `imports`: What does this feature need from other modules?
+4. `exports`: What does this feature share with other modules?
+
+Example:
+
+```text
+PropertiesModule
+  controllers -> PropertiesController exposes /properties routes
+  providers   -> PropertiesService runs property logic
+  imports     -> AuthModule provides JwtGuard
+  exports     -> nothing shared yet
+```
+
 ## New Module Recipe
 
 Example feature: `tenants`.
