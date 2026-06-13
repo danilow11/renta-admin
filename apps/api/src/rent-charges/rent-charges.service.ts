@@ -1,11 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
-
-interface AuthenticatedUserPayload {
-  sub: string;
-  email: string;
-}
+import type { AuthenticatedUserPayload } from '../types/auth-payload';
 
 @Injectable()
 export class RentChargesService {
@@ -23,6 +19,7 @@ export class RentChargesService {
 
     return membership.workspaceId;
   }
+
   async findAll(user?: AuthenticatedUserPayload) {
     const workspaceId = await this.getWorkspaceId(user);
 

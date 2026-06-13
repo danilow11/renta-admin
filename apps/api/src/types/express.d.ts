@@ -1,5 +1,9 @@
-declare namespace Express {
-  interface Request {
-    user?: { sub: string; email: string };
+import type { AuthenticatedUserPayload } from './auth-payload';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthenticatedUserPayload;
+    }
   }
 }

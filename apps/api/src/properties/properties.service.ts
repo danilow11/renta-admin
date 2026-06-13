@@ -1,11 +1,7 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
-
-interface AuthenticatedUserPayload {
-  sub: string;
-  email: string;
-}
+import type { AuthenticatedUserPayload } from '../types/auth-payload';
 
 @Injectable()
 export class PropertiesService {

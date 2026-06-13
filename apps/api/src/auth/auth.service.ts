@@ -3,11 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import argon2 from 'argon2';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-interface AuthenticatedUserPayload {
-  sub: string;
-  email: string;
-}
+import type { AuthenticatedUserPayload } from '../types/auth-payload';
 
 @Injectable()
 export class AuthService {
