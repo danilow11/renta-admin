@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import type { AuthenticatedUserPayload } from '../types/auth-payload';
+import { CreatePropertyDto } from './dto/create-property.dto';
 
 @Injectable()
 export class PropertiesService {
@@ -48,5 +49,17 @@ export class PropertiesService {
     if (!singleProperty) throw new NotFoundException('Property not found');
 
     return singleProperty;
+  }
+
+  async create(body: CreatePropertyDto, user?: AuthenticatedUserPayload) {
+    const workspaceId = await this.workspacesService.getDefaultWorkspaceIdForUser(user?.sub ?? '');
+
+    return this.prisma.property.create({
+      data: {
+        ...body,
+        workspaceId,
+        createdById: user?.sub,
+      },
+    });
   }
 }

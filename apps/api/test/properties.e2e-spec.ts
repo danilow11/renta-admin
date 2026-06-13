@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { PrismaService } from './../src/prisma/prisma.service';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -20,6 +21,8 @@ interface PropertyResponse {
 describe('PropertiesController (e2e)', () => {
   let app: INestApplication<App>;
   let validToken: string;
+  let prisma: PrismaService;
+  const createdPropertyIds: string[] = [];
 
   jest.setTimeout(15000);
 
@@ -31,6 +34,8 @@ describe('PropertiesController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
+
+    prisma = app.get(PrismaService);
 
     const server = app.getHttpServer();
     const res = await request(server)
@@ -118,7 +123,78 @@ describe('PropertiesController (e2e)', () => {
       });
   });
 
+  it('POST /properties without token returns 401', () => {
+    return request(app.getHttpServer()).post('/properties').expect(401);
+  });
+
+  it('POST /properties missing name returns 400', () => {
+    return request(app.getHttpServer())
+      .post('/properties')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({})
+      .expect(400);
+  });
+
+  it('POST /properties empty name returns 400', () => {
+    return request(app.getHttpServer())
+      .post('/properties')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ name: '' })
+      .expect(400);
+  });
+
+  it('POST /properties invalid optional field type returns 400', () => {
+    return request(app.getHttpServer())
+      .post('/properties')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ name: 'Bad Optional Field', city: 123 })
+      .expect(400);
+  });
+
+  it('POST /properties with valid body returns 201', async () => {
+    const server = app.getHttpServer();
+
+    const res = await request(server)
+      .post('/properties')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ name: 'Test Property', city: 'Morelia' })
+      .expect(201);
+
+    const body = res.body as { id: string; name: string; workspaceId: string };
+    createdPropertyIds.push(body.id);
+
+    expect(typeof body.id).toBe('string');
+    expect(body.name).toBe('Test Property');
+    expect(typeof body.workspaceId).toBe('string');
+  });
+
+  it('POST /properties created property appears in GET /properties', async () => {
+    const server = app.getHttpServer();
+
+    const createRes = await request(server)
+      .post('/properties')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ name: 'Integration Test Property' })
+      .expect(201);
+    const created = createRes.body as { id: string; name: string };
+    createdPropertyIds.push(created.id);
+
+    const listRes = await request(server)
+      .get('/properties')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+    const list = listRes.body as PropertyResponse[];
+
+    const found = list.find((p) => p.id === created.id);
+    expect(found).toBeDefined();
+    expect(found!.name).toBe('Integration Test Property');
+  });
+
   afterEach(async () => {
+    if (createdPropertyIds.length > 0) {
+      await prisma.property.deleteMany({ where: { id: { in: createdPropertyIds } } });
+      createdPropertyIds.length = 0;
+    }
     await app.close();
   });
 });
