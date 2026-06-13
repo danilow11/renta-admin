@@ -23,4 +23,10 @@ export class WorkspacesService {
 
     return membership;
   }
+
+  async getDefaultWorkspaceIdForUser(userId: string): Promise<string> {
+    const membership = await this.getDefaultWorkspaceForUser(userId);
+
+    return membership.workspaceId;
+  }
 }

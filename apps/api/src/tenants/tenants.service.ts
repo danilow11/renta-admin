@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import type { AuthenticatedUserPayload } from '../types/auth-payload';
@@ -10,18 +10,8 @@ export class TenantsService {
     private readonly workspacesService: WorkspacesService,
   ) {}
 
-  private async getWorkspaceId(user?: AuthenticatedUserPayload) {
-    if (!user?.sub) {
-      throw new UnauthorizedException('Invalid authenticated user');
-    }
-
-    const membership = await this.workspacesService.getDefaultWorkspaceForUser(user.sub);
-
-    return membership.workspaceId;
-  }
-
   async findAll(user?: AuthenticatedUserPayload) {
-    const workspaceId = await this.getWorkspaceId(user);
+    const workspaceId = await this.workspacesService.getDefaultWorkspaceIdForUser(user?.sub ?? '');
 
     return this.prisma.tenant.findMany({
       where: {
