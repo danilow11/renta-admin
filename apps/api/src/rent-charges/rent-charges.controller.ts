@@ -1,7 +1,8 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { RentChargesService } from './rent-charges.service';
 import { JwtGuard } from '../auth/jwt.guard';
-import type { Request as ExpressRequest } from 'express';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUserPayload } from '../types/auth-payload';
 
 @Controller('rent-charges')
 @UseGuards(JwtGuard)
@@ -9,7 +10,7 @@ export class RentChargesController {
   constructor(private readonly rentChargesService: RentChargesService) {}
 
   @Get()
-  findAll(@Request() request: ExpressRequest) {
-    return this.rentChargesService.findAll(request.user);
+  findAll(@CurrentUser() user: AuthenticatedUserPayload) {
+    return this.rentChargesService.findAll(user);
   }
 }
