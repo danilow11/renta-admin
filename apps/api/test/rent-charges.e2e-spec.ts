@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -35,8 +34,9 @@ interface RentChargeResponse {
 
 describe('RentChargesController (e2e)', () => {
   let app: INestApplication<App>;
-  let jwtService: JwtService;
   let validToken: string;
+
+  jest.setTimeout(15000);
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -47,8 +47,11 @@ describe('RentChargesController (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
 
-    jwtService = app.get(JwtService);
-    validToken = jwtService.sign({ sub: 'test-user-id', email: 'daniel@example.com' });
+    const server = app.getHttpServer();
+    const res = await request(server)
+      .post('/auth/login')
+      .send({ email: 'daniel@example.com', password: 'password123' });
+    validToken = (res.body as { accessToken: string }).accessToken;
   });
 
   it('GET /rent-charges without token returns 401', () => {
