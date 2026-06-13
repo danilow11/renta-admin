@@ -1,11 +1,14 @@
 info:
   name: Get Property by ID
   type: http
-  seq: 3
+  seq: 5
 
 http:
   method: GET
   url: "{{baseUrl}}/properties/{{propertyId}}"
+  auth:
+    type: bearer
+    token: "{{accessToken}}"
 
 settings:
   encodeUrl: true

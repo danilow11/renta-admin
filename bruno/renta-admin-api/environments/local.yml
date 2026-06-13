@@ -4,3 +4,5 @@ variables:
     value: 'http://localhost:3000'
   - name: propertyId
     value: 'property-id-here'
+  - name: accessToken
+    value: 'replace-with-login-token'

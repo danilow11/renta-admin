@@ -1,11 +1,14 @@
 info:
   name: Get Tenants
   type: http
-  seq: 4
+  seq: 6
 
 http:
   method: GET
   url: "{{baseUrl}}/tenants"
+  auth:
+    type: bearer
+    token: "{{accessToken}}"
 
 settings:
   encodeUrl: true
