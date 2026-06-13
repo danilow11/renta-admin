@@ -6,6 +6,8 @@ It covers the first Phase 3 implementation:
 
 ```text
 POST /auth/login
+GET /auth/me
+protected read endpoints
 ```
 
 ## Login Flow
@@ -62,7 +64,11 @@ Current DTO:
 
 ```ts
 export class LoginDto {
+  @IsEmail()
   email!: string;
+
+  @IsString()
+  @MinLength(1)
   password!: string;
 }
 ```
@@ -71,25 +77,12 @@ What it does now:
 
 - Gives TypeScript a shape for `body.email` and `body.password`.
 - Helps the controller code compile cleanly.
+- Uses `class-validator` decorators to validate runtime input.
+- Rejects invalid email or empty password before `AuthService` runs.
 
-What it does not do yet:
+The global `ValidationPipe` in `main.ts` makes these decorators run for incoming requests.
 
-- It does not validate runtime input.
-- It does not reject empty email/password automatically.
-- It does not check email format yet.
-
-Later improvement:
-
-```ts
-@IsEmail()
-email: string;
-
-@IsString()
-@MinLength(1)
-password: string;
-```
-
-That requires validation libraries and a global `ValidationPipe`.
+Test setup also adds the same pipe because e2e tests create the Nest app manually and do not run `main.ts`.
 
 ## Auth Service
 
@@ -207,6 +200,39 @@ Important:
 - Do not put sensitive information in the payload.
 - Do not put `passwordHash`, secrets, or large permission data in the token.
 
+## Guard, Pipe, And Current User Flow
+
+For protected routes, the current flow is:
+
+```text
+request with Authorization header
+  -> JwtGuard verifies token
+  -> JwtGuard sets request.user
+  -> @CurrentUser() reads request.user
+  -> controller receives user payload
+  -> service uses user.sub to scope data
+```
+
+Key pieces:
+
+| Piece | Job |
+| --- | --- |
+| `ValidationPipe` | Validates request body/query/params before controller logic. |
+| `JwtGuard` | Allows or blocks a request before the controller method runs. |
+| `@CurrentUser()` | Custom decorator that extracts the authenticated user payload from the request. |
+
+Difference:
+
+```text
+pipe = validates/transforms input
+guard = decides if request can continue
+decorator = extracts or annotates data for a class/method/parameter
+```
+
+`JwtGuard` is not itself a decorator. It is a guard class. `@UseGuards(JwtGuard)` is the built-in Nest decorator that applies the guard.
+
+`@CurrentUser()` is the project's first custom decorator. It was created with Nest's `createParamDecorator` helper.
+
 ## Auth Module
 
 ```ts
@@ -230,7 +256,8 @@ Important:
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtGuard],
+  exports: [JwtGuard, JwtModule],
 })
 export class AuthModule {}
 ```
@@ -242,6 +269,7 @@ What this means:
 - `ConfigService` reads `JWT_SECRET` from environment variables.
 - If `JWT_SECRET` is missing, the app fails early with a clear error.
 - Tokens currently expire in `1d`.
+- `JwtGuard` is exported so other modules can protect their routes.
 
 ## Users Service
 
@@ -289,6 +317,42 @@ Rule:
 - `passwordHash` can be used internally by `AuthService`.
 - `passwordHash` must never be returned to the client.
 
+## Current User And Workspaces
+
+`GET /auth/me` returns:
+
+```text
+safe user info + workspace memberships
+```
+
+In the database, the Prisma model is named:
+
+```text
+WorkspaceMember
+```
+
+In plain English, one `WorkspaceMember` record is a membership.
+
+Example:
+
+```text
+Daniel belongs to Propiedades Morelia as OWNER.
+```
+
+That row tells the backend:
+
+- which user belongs to which workspace
+- what role the user has
+- which workspace id should scope queries
+
+Protected read services now use:
+
+```text
+authenticated user -> workspace membership -> workspaceId -> Prisma query
+```
+
+This replaced the temporary hardcoded workspace lookup by name.
+
 ## Current Tests
 
 Auth e2e tests check:
@@ -298,6 +362,9 @@ Auth e2e tests check:
 - Login returns a safe user object.
 - Login response does not include `passwordHash`.
 - Login fails with wrong password and returns `401`.
+- Invalid login bodies return `400`.
+- `GET /auth/me` requires a valid token.
+- Protected read endpoints require a valid token.
 
 Why this matters:
 
@@ -305,15 +372,13 @@ Why this matters:
 
 ## What Comes Next
 
-The login endpoint creates a token, but existing routes do not require it yet.
+Core API auth is now in place. Later work can improve it with:
 
-Next auth steps:
-
-1. Add request validation for `LoginDto`.
-2. Add JWT guard.
-3. Add a way to read the current user from the request.
-4. Protect API routes.
-5. Replace hardcoded workspace lookup with authenticated workspace context.
+1. Role checks for owner-only actions.
+2. Frontend login UI.
+3. Better token storage decisions for the browser.
+4. Refresh tokens or cookie-based sessions if needed.
+5. Dedicated test helpers to reduce e2e repetition.
 
 ## Interview Answers
 
@@ -337,3 +402,14 @@ Tokens are sent with requests and can be decoded by clients. They should contain
 
 It gives NestJS a configured `JwtService` that can sign and later verify tokens using `JWT_SECRET`.
 
+### What is a guard?
+
+A guard runs before a controller method and decides whether the request can continue. In this project, `JwtGuard` checks the bearer token.
+
+### What is `@CurrentUser()`?
+
+It is a custom parameter decorator that reads the authenticated user payload from the request. It keeps controllers from manually importing Express `Request` and reading `request.user`.
+
+### What is a workspace membership?
+
+A workspace membership is one `WorkspaceMember` record. It links a user to a workspace and stores the user's role in that workspace.

@@ -84,6 +84,36 @@ Common NestJS decorators:
 | `@Injectable()` | Nest can create this class and inject it into another class. |
 | `@Global()` | Makes a module's exported providers available app-wide. Use sparingly. |
 
+Custom decorators:
+
+```ts
+@CurrentUser()
+```
+
+`@CurrentUser()` is a custom parameter decorator in this project. It reads `request.user`, which is set by `JwtGuard`, and passes the authenticated user payload into the controller method.
+
+Before:
+
+```ts
+findAll(@Request() request: ExpressRequest) {
+  return this.propertiesService.findAll(request.user);
+}
+```
+
+After:
+
+```ts
+findAll(@CurrentUser() user: AuthenticatedUserPayload) {
+  return this.propertiesService.findAll(user);
+}
+```
+
+Why this helps:
+
+- Controllers no longer import Express `Request`.
+- Controllers no longer manually read `request.user`.
+- The repeated auth plumbing is hidden behind one reusable decorator.
+
 Dependency injection example:
 
 ```ts
@@ -501,6 +531,7 @@ Workspace
 In plain words:
 
 - A `Workspace` is the business boundary.
+- A `WorkspaceMember` is the join record between a user and a workspace.
 - A `Property` is a house/building/place.
 - A `Unit` is a rentable room, department, or space.
 - A `Tenant` is the person renting.
@@ -508,6 +539,24 @@ In plain words:
 - A `RentCharge` means rent is owed for a specific month.
 - A `Payment` means money was received for a rent charge.
 - An `Expense` is money spent on a property or unit.
+
+`WorkspaceMember` vs membership:
+
+```text
+WorkspaceMember = Prisma model/table name
+membership = plain English name for one WorkspaceMember record
+memberships = many WorkspaceMember records
+```
+
+Example:
+
+```text
+User: Daniel
+Workspace: Propiedades Morelia
+Role: OWNER
+```
+
+That relationship row is a workspace membership.
 
 ## RentCharge And Payment
 

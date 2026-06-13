@@ -91,6 +91,12 @@ Owner-only capabilities are reserved for workspace administration:
 
 Invitations are not part of the first implementation, but the database should be ready for roles.
 
+Naming note:
+
+- `WorkspaceMember` is the Prisma model/table name.
+- A "membership" means one `WorkspaceMember` record.
+- The membership links one user to one workspace and stores that user's role.
+
 ### 4. Properties And Units
 
 A property is the physical place.
